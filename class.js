@@ -2,6 +2,8 @@ import express from 'express';
 import mysql from 'mysql2';
 import cors from 'cors';
 const app = express();
+import dotenv from 'dotenv';
+dotenv.config();
 
 app.use((req, res, next) => {
     console.log(`Request URL: ${req.url}`);

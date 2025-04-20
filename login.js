@@ -7,6 +7,8 @@ import MySQLSession from 'express-mysql-session';
 const MySQLStore = MySQLSession(session);
 import config from './config.js';
 import { OAuth2Client } from 'google-auth-library';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const app = express();
 

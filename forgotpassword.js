@@ -162,7 +162,7 @@ app.listen(7000, (err) => {
     if (err) {
         console.error('Failed to start server:', err.message);
     } else {
-        console.log(`Server running on http://localhost:7000`);
+        console.log(`Server running on https://student-management-frontend-xhec.vercel.app`);
     }
 });
 

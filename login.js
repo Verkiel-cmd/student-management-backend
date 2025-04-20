@@ -54,10 +54,11 @@ app.use(cors({
 
 
 const db = mysql.createConnection({
-    host: config.DB_HOST,
-    user: config.DB_USER,
-    password: config.DB_PASSWORD,
-    database: config.DB_NAME,
+    host: config.DB_HOST,        // MYSQLHOST from Render's environment
+    user: config.DB_USER,        // MYSQLUSER from Render's environment
+    password: config.DB_PASSWORD, // MYSQLPASSWORD from Render's environment
+    database: config.DB_NAME,     // MYSQL_DATABASE from Render's environment
+    port: process.env.MYSQLPORT || 3306, // Optional: use MYSQLPORT if you have a custom port
 });
 
 db.connect(err => {

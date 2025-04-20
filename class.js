@@ -5,7 +5,6 @@ const app = express();
 import dotenv from 'dotenv';
 dotenv.config();
 
-const apiUrl = process.env.REACT_APP_API_URL;
 
 app.use((req, res, next) => {
     console.log(`Request URL: ${req.url}`);
@@ -45,7 +44,7 @@ db.connect((err) => {
 
 
 //TOTAL STUDENTS
-app.get(`${apiUrl}/class-students`, (_req, res) => {
+app.get('/class-students', (_req, res) => {
     console.log('Fetching total students...');
     const query = 'SELECT COUNT(*) AS total FROM classkern';
     db.query(query, (error, results) => {
@@ -66,7 +65,7 @@ app.get(`${apiUrl}/class-students`, (_req, res) => {
 
 
 // Get all classes endpoint
-app.get(`${apiUrl}/get-classes`, (req, res) => {
+app.get('/get-classes', (req, res) => {
     console.log('Received request for /get-classes');
 
     // Removed the ORDER BY clause that was causing the error
@@ -103,7 +102,7 @@ db.on('error', (err) => {
 
 
 // Create a class
-app.post(`${apiUrl}/add-class`, (req, res) => {
+app.post('/add-class', (req, res) => {
     const { classname, classteacher, studentlimit } = req.body;
 
     // Input validation
@@ -154,7 +153,7 @@ app.post(`${apiUrl}/add-class`, (req, res) => {
 
 
 // Edit class
-app.put(`${apiUrl}/edit-class/:id`, (req, res) => {
+app.put('/edit-class/:id', (req, res) => {
     const { id } = req.params;
     console.log('Received edit request for class ID:', id);
 
@@ -280,7 +279,7 @@ app.put(`${apiUrl}/edit-class/:id`, (req, res) => {
 
 
 // Delete class
-app.delete(`${apiUrl}/delete-class/:id`, (req, res) => {
+app.delete('/delete-class/:id', (req, res) => {
     console.log('Received delete request for class:', req.params.id);
 
     const { id } = req.params;

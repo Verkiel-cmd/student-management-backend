@@ -10,7 +10,7 @@ import { OAuth2Client } from 'google-auth-library';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const apiUrl = process.env.REACT_APP_API_URL;
+
 
 const app = express();
 
@@ -96,7 +96,7 @@ db.query(createUserTableQuery, (err) => {
 await dbPromise.query(createUserTableQuery);
 
 
-app.get(`${apiUrl}/api/user-details`, async (req, res) => {
+app.get('/api/user-details', async (req, res) => {
 
     if (process.env.NODE_ENV === 'development') {
         console.log('Session:', req.session);
@@ -152,7 +152,7 @@ app.use((req, res, next) => {
 
 
 // Registration Route
-app.post(`${apiUrl}/register`, async (req, res) => {
+app.post('/register', async (req, res) => {
     const { username, email, password } = req.body;
 
     try {
@@ -215,7 +215,7 @@ app.post(`${apiUrl}/register`, async (req, res) => {
 
 
 // Login Route
-app.post(`${apiUrl}/login`, async (req, res) => {
+app.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     try {
@@ -273,7 +273,7 @@ app.post(`${apiUrl}/login`, async (req, res) => {
 });
 
 // Logout Route
-app.post(`${apiUrl}/logout`, (req, res) => {
+app.post('/logout', (req, res) => {
     req.session.destroy((err) => {
         if (err) {
             return res.status(500).json({ error: "Logout failed" });
@@ -284,7 +284,7 @@ app.post(`${apiUrl}/logout`, (req, res) => {
 });
 
 // Google Sign-In route
-app.post(`${apiUrl}/google-login`, async (req, res) => {
+app.post('/google-login', async (req, res) => {
     const { token } = req.body;
 
     console.log('Received token:', token);
@@ -316,7 +316,7 @@ app.post(`${apiUrl}/google-login`, async (req, res) => {
     }
 });
 
-app.get(`${apiUrl}/session`, (req, res) => {
+app.get('/session', (req, res) => {
     if (req.session.username) {
         res.json({ username: req.session.username });
     } else {
@@ -325,7 +325,7 @@ app.get(`${apiUrl}/session`, (req, res) => {
 });
 
 
-app.post(`${apiUrl}/check-username`, async (req, res) => {
+app.post('/check-username', async (req, res) => {
     const { username } = req.body;
 
     try {

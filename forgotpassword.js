@@ -6,7 +6,7 @@ import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 dotenv.config();
 
-const apiUrl = process.env.REACT_APP_API_URL;
+
 
 const app = express();
 
@@ -65,7 +65,7 @@ const generateOTP = () => {
 };
 
 
-app.post(`${apiUrl}/send-otp`, async (req, res) => {
+app.post('/send-otp', async (req, res) => {
     const { email } = req.body;
 
     try {
@@ -106,7 +106,7 @@ app.post(`${apiUrl}/send-otp`, async (req, res) => {
 });
 
 // Verify OTP Route
-app.post(`${apiUrl}/verify-otp`, (req, res) => {
+app.post('/verify-otp', (req, res) => {
     const { email, otp } = req.body;
 
     const storedOTP = otpStorage.get(email);
@@ -131,7 +131,7 @@ app.post(`${apiUrl}/verify-otp`, (req, res) => {
 });
 
 // Reset Password Route
-app.post(`${apiUrl}/reset-password`, async (req, res) => {
+app.post('/reset-password', async (req, res) => {
     const { email, newPassword } = req.body;
 
     try {

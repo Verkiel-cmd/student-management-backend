@@ -10,6 +10,8 @@ import { OAuth2Client } from 'google-auth-library';
 import dotenv from 'dotenv';
 dotenv.config();
 
+const apiUrl = process.env.REACT_APP_API_URL;
+
 const app = express();
 
 // Database session store
@@ -94,7 +96,7 @@ db.query(createUserTableQuery, (err) => {
 await dbPromise.query(createUserTableQuery);
 
 
-app.get('/api/user-details', async (req, res) => {
+app.get(`${apiUrl}/api/user-details`, async (req, res) => {
 
     if (process.env.NODE_ENV === 'development') {
         console.log('Session:', req.session);
@@ -150,7 +152,7 @@ app.use((req, res, next) => {
 
 
 // Registration Route
-app.post('/register', async (req, res) => {
+app.post(`${apiUrl}/register`, async (req, res) => {
     const { username, email, password } = req.body;
 
     try {
@@ -213,7 +215,7 @@ app.post('/register', async (req, res) => {
 
 
 // Login Route
-app.post('/login', async (req, res) => {
+app.post(`${apiUrl}/login`, async (req, res) => {
     const { email, password } = req.body;
 
     try {
@@ -271,7 +273,7 @@ app.post('/login', async (req, res) => {
 });
 
 // Logout Route
-app.post("/logout", (req, res) => {
+app.post(`${apiUrl}/logout`, (req, res) => {
     req.session.destroy((err) => {
         if (err) {
             return res.status(500).json({ error: "Logout failed" });
@@ -282,7 +284,7 @@ app.post("/logout", (req, res) => {
 });
 
 // Google Sign-In route
-app.post('/google-login', async (req, res) => {
+app.post(`${apiUrl}/google-login`, async (req, res) => {
     const { token } = req.body;
 
     console.log('Received token:', token);
@@ -314,7 +316,7 @@ app.post('/google-login', async (req, res) => {
     }
 });
 
-app.get('/session', (req, res) => {
+app.get(`${apiUrl}/session`, (req, res) => {
     if (req.session.username) {
         res.json({ username: req.session.username });
     } else {
@@ -323,7 +325,7 @@ app.get('/session', (req, res) => {
 });
 
 
-app.post('/check-username', async (req, res) => {
+app.post(`${apiUrl}/check-username`, async (req, res) => {
     const { username } = req.body;
 
     try {

@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 const app = express();
 
+const apiUrl = process.env.REACT_APP_API_URL;
+
 app.use((req, res, next) => {
   console.log(`Request URL: ${req.url}`);
   console.log(`Request Method: ${req.method}`);
@@ -38,7 +40,7 @@ db.connect((err) => {
 
 
 //TOTAL STUDENTS
-app.get('/total-students', (_req, res) => {
+app.get(`${apiUrl}/total-students`, (_req, res) => {
   console.log('Fetching total students...');
   const query = 'SELECT COUNT(*) AS total FROM studentawt';
   db.query(query, (error, results) => {
@@ -53,7 +55,7 @@ app.get('/total-students', (_req, res) => {
 
 
 // GET STUDENTS
-app.get('/students/:id', (req, res) => {
+app.get(`${apiUrl}/students/:id`, (req, res) => {
   const id = req.params.id;
   const sql = 'SELECT * FROM studentawt WHERE id = ?';
   console.log('Executing SQL query:', sql, 'with ID:', id);
@@ -97,7 +99,7 @@ db.on('error', (err) => {
 
 
 // SEARCH Students
-app.get('/students', (req, res) => {
+app.get(`${apiUrl}/students`, (req, res) => {
   console.log('GET /students - Fetching students');
   const searchTerm = req.query.search ? `%${req.query.search}%` : '%';
   console.log('Search term:', searchTerm);
@@ -119,7 +121,7 @@ app.get('/students', (req, res) => {
 });
 
 // POST create student
-app.post('/students', (req, res) => {
+app.post(`${apiUrl}/students`, (req, res) => {
   console.log('POST /students - Creating a new student');
   const { name, email, phone, address } = req.body;
   console.log('Received data:', { name, email, phone, address });
@@ -147,7 +149,7 @@ app.post('/students', (req, res) => {
 
 
 // PUT update student
-app.put('/students/:id', (req, res) => {
+app.put(`${apiUrl}/students/:id`, (req, res) => {
   console.log(`PUT /students/${req.params.id} - Updating student`);
   const id = req.params.id;
   const { name, email, phone, address } = req.body;
@@ -241,7 +243,7 @@ app.put('/students/:id', (req, res) => {
 
 
 // DELETE student
-app.delete('/students/:id', (req, res) => {
+app.delete(`${apiUrl}/students/:id`, (req, res) => {
   console.log(`DELETE /students/${req.params.id} - Deleting student`);
   const id = req.params.id;
   const sql = 'DELETE FROM studentawt WHERE id = ?';

@@ -94,7 +94,7 @@ db.query(createUserTableQuery, (err) => {
 await dbPromise.query(createUserTableQuery);
 
 
-app.get('https://student-management-backend-a2q4.onrender.com/api/user-details', async (req, res) => {
+app.get('/api/user-details', async (req, res) => {
 
     if (process.env.NODE_ENV === 'development') {
         console.log('Session:', req.session);
@@ -150,7 +150,7 @@ app.use((req, res, next) => {
 
 
 // Registration Route
-app.post('https://student-management-backend-a2q4.onrender.com/register', async (req, res) => {
+app.post('/register', async (req, res) => {
     const { username, email, password } = req.body;
 
     try {
@@ -213,7 +213,7 @@ app.post('https://student-management-backend-a2q4.onrender.com/register', async 
 
 
 // Login Route
-app.post('https://student-management-backend-a2q4.onrender.com/login', async (req, res) => {
+app.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     try {
@@ -271,7 +271,7 @@ app.post('https://student-management-backend-a2q4.onrender.com/login', async (re
 });
 
 // Logout Route
-app.post("https://student-management-backend-a2q4.onrender.com/logout", (req, res) => {
+app.post("/logout", (req, res) => {
     req.session.destroy((err) => {
         if (err) {
             return res.status(500).json({ error: "Logout failed" });
@@ -314,7 +314,7 @@ app.post('/google-login', async (req, res) => {
     }
 });
 
-app.get('https://student-management-backend-a2q4.onrender.com/session', (req, res) => {
+app.get('/session', (req, res) => {
     if (req.session.username) {
         res.json({ username: req.session.username });
     } else {
@@ -323,7 +323,7 @@ app.get('https://student-management-backend-a2q4.onrender.com/session', (req, re
 });
 
 
-app.post('https://student-management-backend-a2q4.onrender.com/check-username', async (req, res) => {
+app.post('/check-username', async (req, res) => {
     const { username } = req.body;
 
     try {

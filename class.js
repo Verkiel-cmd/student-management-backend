@@ -12,7 +12,7 @@ app.use((req, res, next) => {
 
 
 app.use(cors({
-    origin: 'http://localhost:5173', // Replace with your frontend's URL
+    origin: 'https://student-management-frontend-xhec.vercel.app', // Replace with your frontend's URL
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
 }));

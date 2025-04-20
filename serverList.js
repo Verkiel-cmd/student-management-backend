@@ -19,10 +19,11 @@ app.use(cors({
 
 
 const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '',
-  database: 'data_stu'
+  host: process.env.DB_HOST,        // DB_HOST from Render
+  user: process.env.DB_USER,        // DB_USER from Render
+  password: process.env.DB_PASSWORD, // DB_PASSWORD from Render
+  database: process.env.DB_NAME,     // DB_NAME from Render
+  port: process.env.MYSQLPORT || 3306, // Optional: use MYSQLPORT if you have a custom port
 });
 
 db.connect((err) => {

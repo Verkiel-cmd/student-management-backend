@@ -148,7 +148,7 @@ app.use((req, res, next) => {
 
 
 // Registration Route
-app.post('/register', async (req, res) => {
+app.post('https://student-management-backend-a2q4.onrender.com/register', async (req, res) => {
     const { username, email, password } = req.body;
 
     try {

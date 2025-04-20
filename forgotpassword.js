@@ -63,7 +63,7 @@ const generateOTP = () => {
 };
 
 
-app.post('/send-otp', async (req, res) => {
+app.post('https://student-management-backend-a2q4.onrender.com/send-otp', async (req, res) => {
     const { email } = req.body;
 
     try {
@@ -104,7 +104,7 @@ app.post('/send-otp', async (req, res) => {
 });
 
 // Verify OTP Route
-app.post('/verify-otp', (req, res) => {
+app.post('https://student-management-backend-a2q4.onrender.com/verify-otp', (req, res) => {
     const { email, otp } = req.body;
 
     const storedOTP = otpStorage.get(email);
@@ -129,7 +129,7 @@ app.post('/verify-otp', (req, res) => {
 });
 
 // Reset Password Route
-app.post('/reset-password', async (req, res) => {
+app.post('https://student-management-backend-a2q4.onrender.com/reset-password', async (req, res) => {
     const { email, newPassword } = req.body;
 
     try {

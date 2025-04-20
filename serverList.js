@@ -36,7 +36,7 @@ db.connect((err) => {
 
 
 //TOTAL STUDENTS
-app.get('/total-students', (_req, res) => {
+app.get('https://student-management-backend-a2q4.onrender.com/total-students', (_req, res) => {
   console.log('Fetching total students...');
   const query = 'SELECT COUNT(*) AS total FROM studentawt';
   db.query(query, (error, results) => {
@@ -51,7 +51,7 @@ app.get('/total-students', (_req, res) => {
 
 
 // GET STUDENTS
-app.get('/students/:id', (req, res) => {
+app.get('https://student-management-backend-a2q4.onrender.com/students/:id', (req, res) => {
   const id = req.params.id;
   const sql = 'SELECT * FROM studentawt WHERE id = ?';
   console.log('Executing SQL query:', sql, 'with ID:', id);
@@ -95,7 +95,7 @@ db.on('error', (err) => {
 
 
 // SEARCH Students
-app.get('/students', (req, res) => {
+app.get('https://student-management-backend-a2q4.onrender.com/students', (req, res) => {
   console.log('GET /students - Fetching students');
   const searchTerm = req.query.search ? `%${req.query.search}%` : '%';
   console.log('Search term:', searchTerm);
@@ -117,7 +117,7 @@ app.get('/students', (req, res) => {
 });
 
 // POST create student
-app.post('/students', (req, res) => {
+app.post('https://student-management-backend-a2q4.onrender.com/students', (req, res) => {
   console.log('POST /students - Creating a new student');
   const { name, email, phone, address } = req.body;
   console.log('Received data:', { name, email, phone, address });
@@ -145,7 +145,7 @@ app.post('/students', (req, res) => {
 
 
 // PUT update student
-app.put('/students/:id', (req, res) => {
+app.put('https://student-management-backend-a2q4.onrender.com/students/:id', (req, res) => {
   console.log(`PUT /students/${req.params.id} - Updating student`);
   const id = req.params.id;
   const { name, email, phone, address } = req.body;
@@ -239,7 +239,7 @@ app.put('/students/:id', (req, res) => {
 
 
 // DELETE student
-app.delete('/students/:id', (req, res) => {
+app.delete('https://student-management-backend-a2q4.onrender.com/students/:id', (req, res) => {
   console.log(`DELETE /students/${req.params.id} - Deleting student`);
   const id = req.params.id;
   const sql = 'DELETE FROM studentawt WHERE id = ?';

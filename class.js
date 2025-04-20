@@ -41,7 +41,7 @@ db.connect((err) => {
 
 
 //TOTAL STUDENTS
-app.get('/class-students', (_req, res) => {
+app.get('https://student-management-backend-a2q4.onrender.com/class-students', (_req, res) => {
     console.log('Fetching total students...');
     const query = 'SELECT COUNT(*) AS total FROM classkern';
     db.query(query, (error, results) => {
@@ -62,7 +62,7 @@ app.get('/class-students', (_req, res) => {
 
 
 // Get all classes endpoint
-app.get('/get-classes', (req, res) => {
+app.get('https://student-management-backend-a2q4.onrender.com/get-classes', (req, res) => {
     console.log('Received request for /get-classes');
 
     // Removed the ORDER BY clause that was causing the error
@@ -99,7 +99,7 @@ db.on('error', (err) => {
 
 
 // Create a class
-app.post('/add-class', (req, res) => {
+app.post('https://student-management-backend-a2q4.onrender.com/add-class', (req, res) => {
     const { classname, classteacher, studentlimit } = req.body;
 
     // Input validation
@@ -150,7 +150,7 @@ app.post('/add-class', (req, res) => {
 
 
 // Edit class
-app.put('/edit-class/:id', (req, res) => {
+app.put('https://student-management-backend-a2q4.onrender.com/edit-class/:id', (req, res) => {
     const { id } = req.params;
     console.log('Received edit request for class ID:', id);
 
@@ -276,7 +276,7 @@ app.put('/edit-class/:id', (req, res) => {
 
 
 // Delete class
-app.delete('/delete-class/:id', (req, res) => {
+app.delete('https://student-management-backend-a2q4.onrender.com/delete-class/:id', (req, res) => {
     console.log('Received delete request for class:', req.params.id);
 
     const { id } = req.params;

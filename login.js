@@ -321,7 +321,7 @@ app.get('https://student-management-backend-a2q4.onrender.com/session', (req, re
 });
 
 
-app.post('https://student-management-backend-a2q4.onrender.com/check-username', async (req, res) => {
+app.post('/check-username', async (req, res) => {
     const { username } = req.body;
 
     try {

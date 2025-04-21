@@ -4,6 +4,7 @@
   "main": "serverList  .js",
   "type": "module",
   "scripts": {
+    "start": "node login.js",
     "server1": "node serverList.js",
     "server2": "node login.js",
     "server3": "node class.js",

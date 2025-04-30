@@ -317,10 +317,12 @@ app.delete('/delete-class/:id', (req, res) => {
 
 
 // Start the server
-app.listen(5000, (err) => {
+// In class.js, forgotpassword.js, login.js, serverList.js
+const PORT = process.env.PORT || 5000; // Use 5000 as fallback for local dev
+app.listen(PORT, (err) => {
     if (err) {
         console.error('Failed to start server:', err.message);
     } else {
-        console.log(`Server running on https://student-management-frontend-xhec.vercel.app`);
+        console.log(`Server running on port ${PORT}`);
     }
 });

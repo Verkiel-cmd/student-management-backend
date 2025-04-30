@@ -265,10 +265,12 @@ app.get('/', (req, res) => {
 });
 
 // Start the server
-app.listen(3001, (err) => {
-  if (err) {
-    console.error('Failed to start server:', err.message);
-  } else {
-    console.log(`Server running on https://student-management-frontend-xhec.vercel.app`);
-  }
+// In class.js, forgotpassword.js, login.js, serverList.js
+const PORT = process.env.PORT || 3001; // Use 5000 as fallback for local dev
+app.listen(PORT, (err) => {
+    if (err) {
+        console.error('Failed to start server:', err.message);
+    } else {
+        console.log(`Server running on port ${PORT}`);
+    }
 });

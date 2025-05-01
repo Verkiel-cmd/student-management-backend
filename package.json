@@ -3,13 +3,14 @@
   "version": "1.0.0",
   "main": "serverList  .js",
   "type": "module",
-  "scripts": {
+ "scripts": {
     "start": "node login.js",
     "server1": "node serverList.js",
     "server2": "node login.js",
     "server3": "node class.js",
     "server4": "node forgotpassword.js",
-    "start-all": "concurrently \"npm run server1\" \"npm run server2\" \"npm run server3\" \"npm run server4\""
+    "start-all": "concurrently \"npm run server1\" \"npm run server2\" \"npm run server3\" \"npm run server4\"",
+    "postinstall": "chmod +x node_modules/.bin/* && chmod +x *.js"
   },
   "keywords": [],
   "author": "",

@@ -2,6 +2,7 @@ import express from 'express';
 import mysql from 'mysql2';
 import cors from 'cors';
 const app = express();
+import config from './config.js'; // <-- Add this line after your other imports
 import dotenv, { config } from 'dotenv';
 dotenv.config();
 

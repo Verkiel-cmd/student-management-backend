@@ -2,7 +2,6 @@ import express from 'express';
 import mysql from 'mysql2';
 import cors from 'cors';
 import nodemailer from 'nodemailer';
-import dotenv from 'dotenv';
 import bcrypt from 'bcrypt';
 import dotenv, { config } from 'dotenv';
 dotenv.config();

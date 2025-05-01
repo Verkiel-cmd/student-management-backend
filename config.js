@@ -1,6 +1,4 @@
 // config.js
-import dotenv from 'dotenv';
-import config from './config.js';
 // Load environment variables from .env file
 dotenv.config();
 

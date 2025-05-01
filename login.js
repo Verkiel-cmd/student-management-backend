@@ -7,6 +7,7 @@ import MySQLSession from 'express-mysql-session';
 const MySQLStore = MySQLSession(session);
 import { OAuth2Client } from 'google-auth-library';
 import dotenv from 'dotenv';
+import dotenv, { config } from 'dotenv';
 dotenv.config();
 
 
@@ -57,11 +58,11 @@ app.use(cors({
 
 
 const db = mysql.createConnection({
-    host: config.DB_HOST,        // MYSQLHOST from Render's environment
-    user: config.DB_USER,        // MYSQLUSER from Render's environment
-    password: config.DB_PASSWORD, // MYSQLPASSWORD from Render's environment
-    database: config.DB_NAME,     // MYSQL_DATABASE from Render's environment
-    port: process.env.MYSQLPORT || 3306, // Optional: use MYSQLPORT if you have a custom port
+  host: config.DB_HOST,        // DB_HOST from Render
+  user: config.DB_USER,        // DB_USER from Render
+  password: config.DB_PASSWORD, // DB_PASSWORD from Render
+  database: config.DB_NAME,     // DB_NAME from Render
+  port: config.MYSQLPORT || 3306, // Optional: use MYSQLPORT if you have a custom port
 });
 
 db.connect(err => {

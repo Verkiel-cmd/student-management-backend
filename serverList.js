@@ -1,7 +1,7 @@
 import express from 'express';
 import mysql from 'mysql2';
 import cors from 'cors';
-import dotenv from 'dotenv';
+import dotenv, { config } from 'dotenv';
 dotenv.config();
 const app = express();
 
@@ -22,11 +22,11 @@ app.use(cors({
 
 
 const db = mysql.createConnection({
-  host: process.env.DB_HOST,        // DB_HOST from Render
-  user: process.env.DB_USER,        // DB_USER from Render
-  password: process.env.DB_PASSWORD, // DB_PASSWORD from Render
-  database: process.env.DB_NAME,     // DB_NAME from Render
-  port: process.env.MYSQLPORT || 3306, // Optional: use MYSQLPORT if you have a custom port
+  host: config.DB_HOST,        // DB_HOST from Render
+  user: config.DB_USER,        // DB_USER from Render
+  password: config.DB_PASSWORD, // DB_PASSWORD from Render
+  database: config.DB_NAME,     // DB_NAME from Render
+  port: config.MYSQLPORT || 3306, // Optional: use MYSQLPORT if you have a custom port
 });
 
 db.connect((err) => {

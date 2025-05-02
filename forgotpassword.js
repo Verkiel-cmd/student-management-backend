@@ -4,7 +4,7 @@ import cors from 'cors';
 import nodemailer from 'nodemailer';
 import bcrypt from 'bcrypt';
 import config from './config.js'; // <-- Add this line after your other imports
-
+import dotenv from 'dotenv';
 dotenv.config();
 
 

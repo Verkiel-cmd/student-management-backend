@@ -1,0 +1,565 @@
+import express from 'express';
+import mysql from 'mysql2';
+import cors from 'cors';
+import bcrypt from 'bcrypt';
+import session from 'express-session';
+import MySQLSession from 'express-mysql-session';
+import { OAuth2Client } from 'google-auth-library';
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
+import config from './config.js';
+
+dotenv.config();
+
+const app = express();
+
+// --- Middleware ---
+app.use((req, res, next) => {
+    console.log(`Request URL: ${req.url}`);
+    console.log(`Request Method: ${req.method}`);
+    console.log(`Request Headers: ${JSON.stringify(req.headers)}`);
+    next();
+});
+
+app.use(cors({
+    origin: 'https://student-management-frontend-xhec.vercel.app',
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    credentials: true
+}));
+app.use(express.json());
+
+// --- MySQL Connection ---
+const db = mysql.createConnection({
+    host: config.DB_HOST,
+    user: config.DB_USER,
+    password: config.DB_PASSWORD,
+    database: config.DB_NAME,
+    port: config.MYSQLPORT || process.env.MYSQLPORT || 3306,
+});
+const dbPromise = db.promise();
+
+db.connect((err) => {
+    if (err) {
+        console.error('Database connection failed:', err.message);
+        process.exit(1);
+    }
+    console.log('Connected to the MySQL database');
+});
+
+// --- Session Store ---
+const MySQLStore = MySQLSession(session);
+const sessionStore = new MySQLStore({
+    host: config.DB_HOST,
+    user: config.DB_USER,
+    password: config.DB_PASSWORD,
+    database: config.DB_NAME,
+    clearExpired: true,
+    checkExpirationInterval: 900000,
+    expiration: 86400000,
+});
+
+app.use(session({
+    secret: config.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    store: sessionStore,
+    cookie: {
+        secure: false,
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24
+    }
+}));
+
+// --- Root Route ---
+app.get('/', (req, res) => {
+    res.send('Welcome to the Student Management API!');
+});
+
+// ===================
+// CLASS ROUTES
+// ===================
+
+// Get total students in classkern
+app.get('/class-students', (_req, res) => {
+    db.query('SELECT COUNT(*) AS total FROM classkern', (error, results) => {
+        if (error) return res.status(500).json({ error: 'Database query failed' });
+        res.json({ total: results[0].total });
+    });
+});
+
+// Get all classes
+app.get('/get-classes', (req, res) => {
+    db.query('SELECT * FROM classkern', (err, results) => {
+        if (err) return res.status(500).json({ error: 'Failed to fetch classes', details: err.message });
+        res.json(results);
+    });
+});
+
+// Create a class
+app.post('/add-class', (req, res) => {
+    const { classname, classteacher, studentlimit } = req.body;
+    if (!classname?.trim() || !classteacher?.trim() || !studentlimit) {
+        return res.status(400).json({ error: 'All fields are required' });
+    }
+    const parsedStudentLimit = Number(studentlimit);
+    const checkDuplicateQuery = 'SELECT * FROM classkern WHERE classname = ? AND classteacher = ?';
+    db.query(checkDuplicateQuery, [classname.trim(), classteacher.trim()], (checkErr, checkResults) => {
+        if (checkErr) return res.status(500).json({ error: 'Database error during duplicate check' });
+        if (checkResults.length > 0) return res.status(409).json({ error: 'A class with this name and teacher already exists' });
+        const query = 'INSERT INTO classkern (classname, classteacher, studentlimit) VALUES (?, ?, ?)';
+        db.query(query, [classname.trim(), classteacher.trim(), parsedStudentLimit], (err, result) => {
+            if (err) return res.status(500).json({ error: 'Database error during insert' });
+            res.json({
+                message: 'Class created successfully!',
+                updatedClass: {
+                    id: result.insertId,
+                    classname,
+                    classteacher,
+                    studentlimit: parsedStudentLimit,
+                }
+            });
+        });
+    });
+});
+
+// Edit class
+app.put('/edit-class/:id', (req, res) => {
+    const { id } = req.params;
+    const { classname, classteacher, studentlimit } = req.body;
+    if (!id || isNaN(parseInt(id))) return res.status(400).json({ error: 'Invalid class ID' });
+    const trimmedClassName = classname ? classname.trim() : '';
+    if (!trimmedClassName) return res.status(400).json({ error: 'Class name is required' });
+    if (trimmedClassName.length > 100) return res.status(400).json({ error: 'Class name is too long (max 100 characters)' });
+    const trimmedClassTeacher = classteacher ? classteacher.trim() : '';
+    if (!trimmedClassTeacher) return res.status(400).json({ error: 'Class teacher is required' });
+    if (trimmedClassTeacher.length > 100) return res.status(400).json({ error: 'Teacher name is too long (max 100 characters)' });
+    const parsedStudentLimit = parseInt(studentlimit);
+    if (isNaN(parsedStudentLimit) || parsedStudentLimit < 1 || parsedStudentLimit > 1000) {
+        return res.status(400).json({ error: 'Student limit must be a number between 1 and 1000' });
+    }
+    const duplicateCheckQuery = `
+      SELECT classid FROM classkern 
+      WHERE classname = ? AND classteacher = ? AND classid != ?`;
+    db.query(duplicateCheckQuery, [trimmedClassName, trimmedClassTeacher, id], (dupErr, dupResults) => {
+        if (dupErr) return res.status(500).json({ error: 'Error checking for duplicate classes', details: dupErr.message });
+        if (dupResults.length > 0) return res.status(409).json({ error: 'A class with the same name and teacher already exists', duplicateClassId: dupResults[0].classid });
+        const checkExistQuery = 'SELECT * FROM classkern WHERE classid = ?';
+        db.query(checkExistQuery, [id], (checkErr, checkResults) => {
+            if (checkErr) return res.status(500).json({ error: 'Error checking class existence', details: checkErr.message });
+            if (checkResults.length === 0) return res.status(404).json({ error: 'Class not found' });
+            const updateQuery = 'UPDATE classkern SET classname = ?, classteacher = ?, studentlimit = ? WHERE classid = ?';
+            db.query(updateQuery, [trimmedClassName, trimmedClassTeacher, parsedStudentLimit, id], (err, result) => {
+                if (err) return res.status(500).json({ error: 'Error updating data in the database', details: err.message });
+                if (result.affectedRows === 0) return res.status(500).json({ error: 'Failed to update class' });
+                res.json({
+                    message: 'Class updated successfully!',
+                    updatedClass: {
+                        id,
+                        classname: trimmedClassName,
+                        classteacher: trimmedClassTeacher,
+                        studentlimit: parsedStudentLimit
+                    }
+                });
+            });
+        });
+    });
+});
+
+// Delete class
+app.delete('/delete-class/:id', (req, res) => {
+    const { id } = req.params;
+    if (!id || isNaN(id)) return res.status(400).json({ error: 'Invalid class ID' });
+    const query = 'DELETE FROM classkern WHERE classid = ?';
+    db.query(query, [id], (err, result) => {
+        if (err) return res.status(500).json({ error: 'Error deleting data from the database', details: err.message });
+        if (result.affectedRows === 0) return res.status(404).json({ error: 'Class not found' });
+        res.json({ message: 'Class deleted successfully!', deletedClassId: id });
+    });
+});
+
+// ===================
+// STUDENT ROUTES
+// ===================
+
+// Get total students in studentawt
+app.get('/total-students', (_req, res) => {
+    db.query('SELECT COUNT(*) AS total FROM studentawt', (error, results) => {
+        if (error) return res.status(500).json({ error: 'Database query failed' });
+        res.json({ total: results[0].total });
+    });
+});
+
+// Get all students (with search)
+app.get('/students', (req, res) => {
+    const searchTerm = req.query.search ? `%${req.query.search}%` : '%';
+    const sql = 'SELECT * FROM studentawt WHERE name LIKE ? OR email LIKE ?';
+    db.query(sql, [searchTerm, searchTerm], (err, results) => {
+        if (err) return res.status(500).json({ message: 'Invalid query: ' + err.message });
+        res.json(results);
+    });
+});
+
+// Get student by ID
+app.get('/students/:id', (req, res) => {
+    const id = req.params.id;
+    const sql = 'SELECT * FROM studentawt WHERE id = ?';
+    db.query(sql, [id], (error, results) => {
+        if (error) return res.status(500).json({ message: 'Error fetching student' });
+        if (results.length === 0) return res.status(404).json({ message: 'Student not found' });
+        res.json(results[0]);
+    });
+});
+
+// Create student
+app.post('/students', (req, res) => {
+    const { name, email, phone, address } = req.body;
+    if (!name || !email || !phone || !address) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+    const sql = 'INSERT INTO studentawt (name, email, phone, address) VALUES (?, ?, ?, ?)';
+    db.query(sql, [name, email, phone, address], (err, result) => {
+        if (err) {
+            if (err.code === 'ER_DUP_ENTRY') return res.status(409).json({ error: 'The data already exists' });
+            return res.status(500).json({ error: 'Error creating student' });
+        }
+        res.json({ message: 'Student created successfully', id: result.insertId });
+    });
+});
+
+// Update student
+app.put('/students/:id', (req, res) => {
+    const id = req.params.id;
+    const { name, email, phone, address } = req.body;
+    if (!name || !email || !phone || !address) {
+        return res.status(400).json({ message: 'All fields are required' });
+    }
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+    const trimmedPhone = phone.trim();
+    const trimmedAddress = address.trim();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+        return res.status(400).json({ message: 'Invalid email format' });
+    }
+    const checkStudentQuery = 'SELECT * FROM studentawt WHERE id = ?';
+    db.query(checkStudentQuery, [id], (checkErr, checkResults) => {
+        if (checkErr) return res.status(500).json({ message: 'Error checking student existence' });
+        if (checkResults.length === 0) return res.status(404).json({ message: 'Student not found' });
+        const duplicateCheckQuery = `
+          SELECT id, name, email, phone 
+          FROM studentawt 
+          WHERE (email = ? OR phone = ?) AND id != ?`;
+        db.query(duplicateCheckQuery, [trimmedEmail, trimmedPhone, id], (dupErr, dupResults) => {
+            if (dupErr) return res.status(500).json({ message: 'Error checking for duplicate students' });
+            if (dupResults.length > 0) {
+                const duplicateEntries = dupResults.map(entry => ({
+                    id: entry.id,
+                    name: entry.name,
+                    conflictField: entry.email === trimmedEmail ? 'email' : 'phone'
+                }));
+                return res.status(409).json({
+                    message: 'Duplicate student entry found',
+                    duplicates: duplicateEntries
+                });
+            }
+            const updateSql = 'UPDATE studentawt SET name = ?, email = ?, phone = ?, address = ? WHERE id = ?';
+            db.query(updateSql, [trimmedName, trimmedEmail, trimmedPhone, trimmedAddress, id], (err, result) => {
+                if (err) return res.status(500).json({ message: 'Error updating student' });
+                if (result.affectedRows === 0) return res.status(404).json({ message: 'Student not found or no changes made' });
+                res.json({
+                    message: 'Student updated successfully',
+                    updatedStudent: {
+                        id,
+                        name: trimmedName,
+                        email: trimmedEmail,
+                        phone: trimmedPhone,
+                        address: trimmedAddress
+                    }
+                });
+            });
+        });
+    });
+});
+
+// Delete student
+app.delete('/students/:id', (req, res) => {
+    const id = req.params.id;
+    const sql = 'DELETE FROM studentawt WHERE id = ?';
+    db.query(sql, [id], (err) => {
+        if (err) return res.status(500).json({ message: 'Error deleting student' });
+        res.json({ message: 'Student deleted successfully' });
+    });
+});
+
+// ===================
+// AUTH & USER ROUTES
+// ===================
+
+// Create users table if not exists
+const createUserTableQuery = `
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(50) UNIQUE NOT NULL,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)`;
+db.query(createUserTableQuery, (err) => {
+    if (err) console.error('Error creating users table:', err);
+});
+
+// Get user details
+app.get('/api/user-details', async (req, res) => {
+    if (!req.session || !req.session.userId) {
+        return res.status(401).json({ success: false, message: 'Unauthorized - Please log in' });
+    }
+    try {
+        const userId = req.session.userId;
+        if (!Number.isInteger(userId) || userId <= 0) {
+            return res.status(400).json({ success: false, message: 'Invalid session data' });
+        }
+        const [rows] = await dbPromise.query('SELECT username FROM users WHERE id = ?', [userId]);
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        res.json({ success: true, user: { username: rows[0].username } });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+});
+
+// Registration
+app.post('/register', async (req, res) => {
+    const { username, email, password } = req.body;
+    try {
+        const [existingUsers] = await dbPromise.query(
+            'SELECT * FROM users WHERE email = ? OR username = ?',
+            [email, username]
+        );
+        if (existingUsers.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: existingUsers[0].email === email
+                    ? 'Email already in use'
+                    : 'Username already exists'
+            });
+        }
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        const [result] = await dbPromise.query(
+            'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
+            [username, email, hashedPassword]
+        );
+        req.session.userId = result.insertId;
+        req.session.username = username;
+        req.session.save(err => {
+            if (err) return res.status(500).json({ success: false, message: 'Session error' });
+            res.status(201).json({
+                success: true,
+                message: 'User registered successfully',
+                userId: result.insertId,
+                username: username,
+                email: email,
+                redirectUrl: '/Frontlog'
+            });
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
+    }
+});
+
+// Login
+app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const [users] = await dbPromise.query(
+            'SELECT * FROM users WHERE email = ?',
+            [email]
+        );
+        if (users.length === 0) {
+            return res.status(400).json({
+                success: false,
+                messageEmail: 'Invalid email',
+                field: 'email'
+            });
+        }
+        const user = users[0];
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({
+                success: false,
+                messagePassword: 'Invalid password',
+                field: 'password'
+            });
+        }
+        req.session.userId = user.id;
+        req.session.username = user.username;
+        req.session.save(err => {
+            if (err) return res.status(500).json({ success: false, message: 'Session error' });
+            res.json({
+                success: true,
+                message: 'Login successful',
+                userId: user.id,
+                username: user.username,
+                redirectUrl: '/ListStud'
+            });
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
+    }
+});
+
+// Logout
+app.post('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) return res.status(500).json({ error: "Logout failed" });
+        res.clearCookie("user_sid");
+        res.json({ message: "Logout successful" });
+    });
+});
+
+// Google Sign-In
+app.post('/google-login', async (req, res) => {
+    const { token } = req.body;
+    try {
+        const client = new OAuth2Client(config.GOOGLE_CLIENT_ID);
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: config.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        const email = payload.email;
+        db.query('SELECT * FROM users WHERE email = ?', [email], (err, results) => {
+            if (err) return res.status(500).send({ message: 'Database error' });
+            if (results.length === 0) {
+                db.query('INSERT INTO users (email, password) VALUES (?, ?)', [email, ''], (insertErr) => {
+                    if (insertErr) return res.status(500).send({ message: 'Database error' });
+                    return res.status(200).send({ success: true, message: 'Google login successful' });
+                });
+            } else {
+                return res.status(200).send({ success: true, message: 'Google login successful' });
+            }
+        });
+    } catch (error) {
+        return res.status(401).send({ message: 'Invalid Google token' });
+    }
+});
+
+// Session info
+app.get('/session', (req, res) => {
+    if (req.session.username) {
+        res.json({ username: req.session.username });
+    } else {
+        res.status(401).json({ message: 'Not logged in' });
+    }
+});
+
+// Check username
+app.post('/check-username', async (req, res) => {
+    const { username } = req.body;
+    try {
+        const [existingUsers] = await dbPromise.query(
+            'SELECT * FROM users WHERE username = ?',
+            [username]
+        );
+        if (existingUsers.length > 0) {
+            return res.json({ exists: true });
+        } else {
+            return res.json({ exists: false });
+        }
+    } catch (error) {
+        res.status(500).json({ exists: false, message: 'Server error' });
+    }
+});
+
+// ===================
+// FORGOT PASSWORD / OTP ROUTES
+// ===================
+
+const otpStorage = new Map();
+
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+    },
+    tls: { rejectUnauthorized: false },
+    debug: true,
+});
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+app.post('/send-otp', async (req, res) => {
+    const { email } = req.body;
+    try {
+        const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        if (!isValidEmail(email)) return res.status(400).json({ success: false, message: 'Invalid email address' });
+        const [users] = await dbPromise.query('SELECT * FROM users WHERE email = ?', [email]);
+        if (users.length === 0) return res.status(404).json({ success: false, message: 'Email not found' });
+        const otp = generateOTP();
+        otpStorage.set(email, { otp, expires: Date.now() + 10 * 60 * 1000 });
+        await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Password Reset OTP',
+            text: `Your OTP for password reset is: ${otp}. It will expire in 10 minutes.`
+        });
+        res.json({ success: true, message: 'OTP sent successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to send OTP' });
+    }
+});
+
+app.post('/verify-otp', (req, res) => {
+    const { email, otp } = req.body;
+    const storedOTP = otpStorage.get(email);
+    if (!storedOTP) return res.status(400).json({ success: false, message: 'OTP not found' });
+    if (storedOTP.expires < Date.now()) {
+        otpStorage.delete(email);
+        return res.status(400).json({ success: false, message: 'OTP expired' });
+    }
+    if (storedOTP.otp !== otp) return res.status(400).json({ success: false, message: 'Invalid OTP' });
+    otpStorage.delete(email);
+    res.json({ success: true, message: 'OTP verified successfully' });
+});
+
+app.post('/reset-password', async (req, res) => {
+    const { email, newPassword } = req.body;
+    try {
+        const [user] = await dbPromise.query('SELECT * FROM users WHERE email = ?', [email]);
+        if (!user || user.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await dbPromise.query('UPDATE users SET password = ? WHERE email = ?', [hashedPassword, email]);
+        res.json({ success: true, message: 'Password reset successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to reset password' });
+    }
+});
+
+// ===================
+// GLOBAL DB ERROR HANDLER
+// ===================
+db.on('error', (err) => {
+    console.error('Database error:', err);
+    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+        db.connect((connectErr) => {
+            if (connectErr) {
+                console.error('Reconnection failed:', connectErr);
+            } else {
+                console.log('Successfully reconnected to database');
+            }
+        });
+    }
+});
+
+// ===================
+// START SERVER
+// ===================
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, (err) => {
+    if (err) {
+        console.error('Failed to start server:', err.message);
+    } else {
+        console.log(`Server running on port ${PORT}`);
+    }
+});

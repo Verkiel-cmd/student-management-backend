@@ -23,8 +23,7 @@ app.use((req, res, next) => {
 
 app.use(cors({
     origin: [
-        'https://student-management-frontend-h0e8em6un-verkiel-cmds-projects.vercel.app'
-        // Add any other currently valid frontend URLs here
+        'https://student-management-frontend-rust.vercel.app'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true

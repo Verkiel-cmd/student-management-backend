@@ -410,6 +410,11 @@ app.delete('/delete-class/:id', (req, res) => {
     });
 });
 
+// Drop classkern table if it exists
+const dropClasskernTableQuery = `
+  DROP TABLE IF EXISTS classkern
+`;
+
 // Create classkern table if not exists
 const createClasskernTableQuery = `
 CREATE TABLE IF NOT EXISTS classkern (
@@ -419,8 +424,18 @@ CREATE TABLE IF NOT EXISTS classkern (
   studentlimit INT NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )`;
+
+
+db.query(dropClasskernTableQuery, (err) => {
+  if (err) {
+    console.error('Error dropping classkern table:', err);
+    return;
+  }
+  console.log('Dropped classkern table (if it existed)');
+
 db.query(createClasskernTableQuery, (err) => {
     if (err) console.error('Error creating classkern table:', err);
+});
 });
 
 // ===================
@@ -537,6 +552,11 @@ app.delete('/students/:id', (req, res) => {
     });
 });
 
+// Drop classkern table if it exists
+const dropStudentawtTableQuery = `
+  DROP TABLE IF EXISTS classkern
+`;
+
 // Create studentawt table if not exists
 const createStudentawtTableQuery = `
 CREATE TABLE IF NOT EXISTS studentawt (
@@ -547,13 +567,27 @@ CREATE TABLE IF NOT EXISTS studentawt (
   address VARCHAR(255) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )`;
+
+db.query(dropStudentawtTableQuery, (err) => {
+    if (err) {
+      console.error('Error dropping classkern table:', err);
+      return;
+    }
+    console.log('Dropped classkern table (if it existed)');
+
 db.query(createStudentawtTableQuery, (err) => {
     if (err) console.error('Error creating studentawt table:', err);
+});
 });
 
 // ===================
 // AUTH & USER ROUTES
 // ===================
+
+// Drop classkern table if it exists
+const dropUserTableQuery = `
+  DROP TABLE IF EXISTS classkern
+`;
 
 // Create users table if not exists
 const createUserTableQuery = `
@@ -564,8 +598,17 @@ CREATE TABLE IF NOT EXISTS users (
   password VARCHAR(255) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 )`;
+
+db.query(dropUserTableQuery, (err) => {
+    if (err) {
+      console.error('Error dropping classkern table:', err);
+      return;
+    }
+    console.log('Dropped classkern table (if it existed)');
+
 db.query(createUserTableQuery, (err) => {
     if (err) console.error('Error creating users table:', err);
+});
 });
 
 // Get user details

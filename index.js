@@ -410,6 +410,19 @@ app.delete('/delete-class/:id', (req, res) => {
     });
 });
 
+// Create classkern table if not exists
+const createClasskernTableQuery = `
+CREATE TABLE IF NOT EXISTS classkern (
+  classid INT AUTO_INCREMENT PRIMARY KEY,
+  classname VARCHAR(100) NOT NULL,
+  classteacher VARCHAR(100) NOT NULL,
+  studentlimit INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)`;
+db.query(createClasskernTableQuery, (err) => {
+    if (err) console.error('Error creating classkern table:', err);
+});
+
 // ===================
 // STUDENT ROUTES
 // ===================
@@ -522,6 +535,20 @@ app.delete('/students/:id', (req, res) => {
         if (err) return res.status(500).json({ message: 'Error deleting student' });
         res.json({ message: 'Student deleted successfully' });
     });
+});
+
+// Create studentawt table if not exists
+const createStudentawtTableQuery = `
+CREATE TABLE IF NOT EXISTS studentawt (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(100) NOT NULL,
+  phone VARCHAR(20) NOT NULL,
+  address VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)`;
+db.query(createStudentawtTableQuery, (err) => {
+    if (err) console.error('Error creating studentawt table:', err);
 });
 
 // ===================

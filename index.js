@@ -359,6 +359,7 @@ app.post('/register', async (req, res) => {
         req.session.username = username;
         req.session.save(err => {
             if (err) return res.status(500).json({ success: false, message: 'Session error' });
+            console.error('Session save error:', err);
             res.status(201).json({
                 success: true,
                 message: 'User registered successfully',

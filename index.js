@@ -81,6 +81,233 @@ app.get('/', (req, res) => {
     res.send('Welcome to the Student Management API!');
 });
 
+// Registration
+app.post('/register', async (req, res) => {
+    const { username, email, password } = req.body;
+    try {
+        const [existingUsers] = await dbPromise.query(
+            'SELECT * FROM users WHERE email = ? OR username = ?',
+            [email, username]
+        );
+        if (existingUsers.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: existingUsers[0].email === email
+                    ? 'Email already in use'
+                    : 'Username already exists'
+            });
+        }
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+        const [result] = await dbPromise.query(
+            'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
+            [username, email, hashedPassword]
+        );
+        req.session.userId = result.insertId;
+        req.session.username = username;
+        req.session.save(err => {
+            if (err) {
+                console.error('Session save error:', err); // <-- Only log if there's an error
+                return res.status(500).json({ success: false, message: 'Session error' });
+            }
+            res.status(201).json({
+                success: true,
+                message: 'User registered successfully',
+                userId: result.insertId,
+                username: username,
+                email: email,
+                redirectUrl: '/Frontlog'
+            });
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
+    }
+});
+
+// Login
+app.post('/login', async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const [users] = await dbPromise.query(
+            'SELECT * FROM users WHERE email = ?',
+            [email]
+        );
+        if (users.length === 0) {
+            return res.status(400).json({
+                success: false,
+                messageEmail: 'Invalid email',
+                field: 'email'
+            });
+        }
+        const user = users[0];
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({
+                success: false,
+                messagePassword: 'Invalid password',
+                field: 'password'
+            });
+        }
+        req.session.userId = user.id;
+        req.session.username = user.username;
+        req.session.save(err => {
+            if (err) return res.status(500).json({ success: false, message: 'Session error' });
+            res.json({
+                success: true,
+                message: 'Login successful',
+                userId: user.id,
+                username: user.username,
+                redirectUrl: '/ListStud'
+            });
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
+    }
+});
+
+// Logout
+app.post('/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) return res.status(500).json({ error: "Logout failed" });
+        res.clearCookie("user_sid");
+        res.json({ message: "Logout successful" });
+    });
+});
+
+// Google Sign-In
+app.post('/google-login', async (req, res) => {
+    const { token } = req.body;
+    try {
+        const client = new OAuth2Client(config.GOOGLE_CLIENT_ID);
+        const ticket = await client.verifyIdToken({
+            idToken: token,
+            audience: config.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
+        const email = payload.email;
+        db.query('SELECT * FROM users WHERE email = ?', [email], (err, results) => {
+            if (err) return res.status(500).send({ message: 'Database error' });
+            if (results.length === 0) {
+                db.query('INSERT INTO users (email, password) VALUES (?, ?)', [email, ''], (insertErr) => {
+                    if (insertErr) return res.status(500).send({ message: 'Database error' });
+                    return res.status(200).send({ success: true, message: 'Google login successful' });
+                });
+            } else {
+                return res.status(200).send({ success: true, message: 'Google login successful' });
+            }
+        });
+    } catch (error) {
+        return res.status(401).send({ message: 'Invalid Google token' });
+    }
+});
+
+// Session info
+app.get('/session', (req, res) => {
+    if (req.session.username) {
+        res.json({ username: req.session.username });
+    } else {
+        res.status(401).json({ message: 'Not logged in' });
+    }
+});
+
+// Check username
+app.post('/check-username', async (req, res) => {
+    const { username } = req.body;
+    try {
+        const [existingUsers] = await dbPromise.query(
+            'SELECT * FROM users WHERE username = ?',
+            [username]
+        );
+        if (existingUsers.length > 0) {
+            return res.json({ exists: true });
+        } else {
+            return res.json({ exists: false });
+        }
+    } catch (error) {
+        res.status(500).json({ exists: false, message: 'Server error' });
+    }
+});
+
+// ===================
+// FORGOT PASSWORD / OTP ROUTES
+// ===================
+
+const otpStorage = new Map();
+
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+    },
+    tls: { rejectUnauthorized: false },
+    debug: true,
+});
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+app.post('/send-otp', async (req, res) => {
+    const { email } = req.body;
+    try {
+        const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        if (!isValidEmail(email)) return res.status(400).json({ success: false, message: 'Invalid email address' });
+        const [users] = await dbPromise.query('SELECT * FROM users WHERE email = ?', [email]);
+        if (users.length === 0) return res.status(404).json({ success: false, message: 'Email not found' });
+        const otp = generateOTP();
+        otpStorage.set(email, { otp, expires: Date.now() + 10 * 60 * 1000 });
+        await transporter.sendMail({
+            from: process.env.EMAIL_USER,
+            to: email,
+            subject: 'Password Reset OTP',
+            text: `Your OTP for password reset is: ${otp}. It will expire in 10 minutes.`
+        });
+        res.json({ success: true, message: 'OTP sent successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to send OTP' });
+    }
+});
+
+app.post('/verify-otp', (req, res) => {
+    const { email, otp } = req.body;
+    const storedOTP = otpStorage.get(email);
+    if (!storedOTP) return res.status(400).json({ success: false, message: 'OTP not found' });
+    if (storedOTP.expires < Date.now()) {
+        otpStorage.delete(email);
+        return res.status(400).json({ success: false, message: 'OTP expired' });
+    }
+    if (storedOTP.otp !== otp) return res.status(400).json({ success: false, message: 'Invalid OTP' });
+    otpStorage.delete(email);
+    res.json({ success: true, message: 'OTP verified successfully' });
+});
+
+app.post('/reset-password', async (req, res) => {
+    const { email, newPassword } = req.body;
+    try {
+        const [user] = await dbPromise.query('SELECT * FROM users WHERE email = ?', [email]);
+        if (!user || user.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await dbPromise.query('UPDATE users SET password = ? WHERE email = ?', [hashedPassword, email]);
+        res.json({ success: true, message: 'Password reset successfully' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Failed to reset password' });
+    }
+});
+
+// ===================
+// GLOBAL DB ERROR HANDLER
+// ===================
+db.on('error', (err) => {
+    console.error('Database error:', err);
+    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+        db.connect((connectErr) => {
+            if (connectErr) {
+                console.error('Reconnection failed:', connectErr);
+            } else {
+                console.log('Successfully reconnected to database');
+            }
+        });
+    }
+});
+
 // ===================
 // CLASS ROUTES
 // ===================
@@ -334,232 +561,7 @@ app.get('/api/user-details', async (req, res) => {
     }
 });
 
-// Registration
-app.post('/register', async (req, res) => {
-    const { username, email, password } = req.body;
-    try {
-        const [existingUsers] = await dbPromise.query(
-            'SELECT * FROM users WHERE email = ? OR username = ?',
-            [email, username]
-        );
-        if (existingUsers.length > 0) {
-            return res.status(400).json({
-                success: false,
-                message: existingUsers[0].email === email
-                    ? 'Email already in use'
-                    : 'Username already exists'
-            });
-        }
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        const [result] = await dbPromise.query(
-            'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
-            [username, email, hashedPassword]
-        );
-        req.session.userId = result.insertId;
-        req.session.username = username;
-        req.session.save(err => {
-            if (err) {
-                console.error('Session save error:', err); // <-- Only log if there's an error
-                return res.status(500).json({ success: false, message: 'Session error' });
-            }
-            res.status(201).json({
-                success: true,
-                message: 'User registered successfully',
-                userId: result.insertId,
-                username: username,
-                email: email,
-                redirectUrl: '/Frontlog'
-            });
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
-    }
-});
 
-// Login
-app.post('/login', async (req, res) => {
-    const { email, password } = req.body;
-    try {
-        const [users] = await dbPromise.query(
-            'SELECT * FROM users WHERE email = ?',
-            [email]
-        );
-        if (users.length === 0) {
-            return res.status(400).json({
-                success: false,
-                messageEmail: 'Invalid email',
-                field: 'email'
-            });
-        }
-        const user = users[0];
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({
-                success: false,
-                messagePassword: 'Invalid password',
-                field: 'password'
-            });
-        }
-        req.session.userId = user.id;
-        req.session.username = user.username;
-        req.session.save(err => {
-            if (err) return res.status(500).json({ success: false, message: 'Session error' });
-            res.json({
-                success: true,
-                message: 'Login successful',
-                userId: user.id,
-                username: user.username,
-                redirectUrl: '/ListStud'
-            });
-        });
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
-    }
-});
-
-// Logout
-app.post('/logout', (req, res) => {
-    req.session.destroy((err) => {
-        if (err) return res.status(500).json({ error: "Logout failed" });
-        res.clearCookie("user_sid");
-        res.json({ message: "Logout successful" });
-    });
-});
-
-// Google Sign-In
-app.post('/google-login', async (req, res) => {
-    const { token } = req.body;
-    try {
-        const client = new OAuth2Client(config.GOOGLE_CLIENT_ID);
-        const ticket = await client.verifyIdToken({
-            idToken: token,
-            audience: config.GOOGLE_CLIENT_ID,
-        });
-        const payload = ticket.getPayload();
-        const email = payload.email;
-        db.query('SELECT * FROM users WHERE email = ?', [email], (err, results) => {
-            if (err) return res.status(500).send({ message: 'Database error' });
-            if (results.length === 0) {
-                db.query('INSERT INTO users (email, password) VALUES (?, ?)', [email, ''], (insertErr) => {
-                    if (insertErr) return res.status(500).send({ message: 'Database error' });
-                    return res.status(200).send({ success: true, message: 'Google login successful' });
-                });
-            } else {
-                return res.status(200).send({ success: true, message: 'Google login successful' });
-            }
-        });
-    } catch (error) {
-        return res.status(401).send({ message: 'Invalid Google token' });
-    }
-});
-
-// Session info
-app.get('/session', (req, res) => {
-    if (req.session.username) {
-        res.json({ username: req.session.username });
-    } else {
-        res.status(401).json({ message: 'Not logged in' });
-    }
-});
-
-// Check username
-app.post('/check-username', async (req, res) => {
-    const { username } = req.body;
-    try {
-        const [existingUsers] = await dbPromise.query(
-            'SELECT * FROM users WHERE username = ?',
-            [username]
-        );
-        if (existingUsers.length > 0) {
-            return res.json({ exists: true });
-        } else {
-            return res.json({ exists: false });
-        }
-    } catch (error) {
-        res.status(500).json({ exists: false, message: 'Server error' });
-    }
-});
-
-// ===================
-// FORGOT PASSWORD / OTP ROUTES
-// ===================
-
-const otpStorage = new Map();
-
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-    tls: { rejectUnauthorized: false },
-    debug: true,
-});
-const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
-
-app.post('/send-otp', async (req, res) => {
-    const { email } = req.body;
-    try {
-        const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        if (!isValidEmail(email)) return res.status(400).json({ success: false, message: 'Invalid email address' });
-        const [users] = await dbPromise.query('SELECT * FROM users WHERE email = ?', [email]);
-        if (users.length === 0) return res.status(404).json({ success: false, message: 'Email not found' });
-        const otp = generateOTP();
-        otpStorage.set(email, { otp, expires: Date.now() + 10 * 60 * 1000 });
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: 'Password Reset OTP',
-            text: `Your OTP for password reset is: ${otp}. It will expire in 10 minutes.`
-        });
-        res.json({ success: true, message: 'OTP sent successfully' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to send OTP' });
-    }
-});
-
-app.post('/verify-otp', (req, res) => {
-    const { email, otp } = req.body;
-    const storedOTP = otpStorage.get(email);
-    if (!storedOTP) return res.status(400).json({ success: false, message: 'OTP not found' });
-    if (storedOTP.expires < Date.now()) {
-        otpStorage.delete(email);
-        return res.status(400).json({ success: false, message: 'OTP expired' });
-    }
-    if (storedOTP.otp !== otp) return res.status(400).json({ success: false, message: 'Invalid OTP' });
-    otpStorage.delete(email);
-    res.json({ success: true, message: 'OTP verified successfully' });
-});
-
-app.post('/reset-password', async (req, res) => {
-    const { email, newPassword } = req.body;
-    try {
-        const [user] = await dbPromise.query('SELECT * FROM users WHERE email = ?', [email]);
-        if (!user || user.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await dbPromise.query('UPDATE users SET password = ? WHERE email = ?', [hashedPassword, email]);
-        res.json({ success: true, message: 'Password reset successfully' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to reset password' });
-    }
-});
-
-// ===================
-// GLOBAL DB ERROR HANDLER
-// ===================
-db.on('error', (err) => {
-    console.error('Database error:', err);
-    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-        db.connect((connectErr) => {
-            if (connectErr) {
-                console.error('Reconnection failed:', connectErr);
-            } else {
-                console.log('Successfully reconnected to database');
-            }
-        });
-    }
-});
 
 // ===================
 // START SERVER

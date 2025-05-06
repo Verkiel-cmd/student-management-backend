@@ -22,7 +22,10 @@ app.use((req, res, next) => {
 });
 
 app.use(cors({
-    origin: 'https://student-management-frontend-rust.vercel.app',
+    origin: [
+        'https://student-management-frontend-rust.vercel.app',
+        'https://student-management-frontend-blav8pkj3-verkiel-cmds-projects.vercel.app'
+    ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE']
 }));

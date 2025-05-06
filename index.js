@@ -358,8 +358,10 @@ app.post('/register', async (req, res) => {
         req.session.userId = result.insertId;
         req.session.username = username;
         req.session.save(err => {
-            if (err) return res.status(500).json({ success: false, message: 'Session error' });
-            console.error('Session save error:', err);
+            if (err) {
+                console.error('Session save error:', err); // <-- Only log if there's an error
+                return res.status(500).json({ success: false, message: 'Session error' });
+            }
             res.status(201).json({
                 success: true,
                 message: 'User registered successfully',

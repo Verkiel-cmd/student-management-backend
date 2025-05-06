@@ -22,20 +22,9 @@ app.use((req, res, next) => {
 });
 
 app.use(cors({
-    origin: (origin, callback) => {
-        
-        if (!origin) return callback(null, true);
-        
-        if (
-            origin === 'https://student-management-frontend-rust.vercel.app' ||
-            /\.vercel\.app$/.test(origin)
-        ) {
-            return callback(null, true);
-        }
-        return callback(new Error('Not allowed by CORS'));
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true
+    origin: 'https://student-management-frontend-rust.vercel.app',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE']
 }));
 
 app.use(express.json());

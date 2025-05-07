@@ -16,7 +16,7 @@ const app = express();
 app.use(cors({
     origin: [
         'https://student-management-frontend-rust.vercel.app',
-        'https://student-management-frontend-blav8pkj3-verkiel-cmds-projects.vercel.app'
+        'https://student-management-frontend-blav8pkj3-verkiel-cmds-projects.vercel.app',  // Add your production domain here
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -173,6 +173,14 @@ app.post('/logout', (req, res) => {
 // Google Sign-In
 app.post('/google-login', async (req, res) => {
     const { token } = req.body;
+    
+    if (!token) {
+        return res.status(400).json({
+            success: false,
+            message: 'No token provided'
+        });
+    }
+
     try {
         const client = new OAuth2Client(config.GOOGLE_CLIENT_ID);
         const ticket = await client.verifyIdToken({
@@ -180,20 +188,88 @@ app.post('/google-login', async (req, res) => {
             audience: config.GOOGLE_CLIENT_ID,
         });
         const payload = ticket.getPayload();
+        
+        if (!payload.email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email not provided by Google'
+            });
+        }
+
         const email = payload.email;
-        db.query('SELECT * FROM users WHERE email = ?', [email], (err, results) => {
-            if (err) return res.status(500).send({ message: 'Database error' });
-            if (results.length === 0) {
-                db.query('INSERT INTO users (email, password) VALUES (?, ?)', [email, ''], (insertErr) => {
-                    if (insertErr) return res.status(500).send({ message: 'Database error' });
-                    return res.status(200).send({ success: true, message: 'Google login successful' });
+        const name = payload.name || email.split('@')[0];
+        const picture = payload.picture || null;
+
+        try {
+            // Check if user exists
+            const [users] = await dbPromise.query('SELECT * FROM users WHERE email = ?', [email]);
+            
+            if (users.length === 0) {
+                // Create new user with a generated username
+                const username = name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+                const [result] = await dbPromise.query(
+                    'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
+                    [username, email, '']
+                );
+                
+                // Set up session
+                req.session.userId = result.insertId;
+                req.session.username = username;
+                
+                await new Promise((resolve, reject) => {
+                    req.session.save(err => {
+                        if (err) reject(err);
+                        else resolve();
+                    });
+                });
+
+                return res.status(200).json({
+                    success: true,
+                    message: 'Google login successful',
+                    userId: result.insertId,
+                    username: username,
+                    email: email,
+                    picture: picture,
+                    redirectUrl: '/ListStud'
                 });
             } else {
-                return res.status(200).send({ success: true, message: 'Google login successful' });
+                // Existing user - set up session
+                const user = users[0];
+                req.session.userId = user.id;
+                req.session.username = user.username;
+                
+                await new Promise((resolve, reject) => {
+                    req.session.save(err => {
+                        if (err) reject(err);
+                        else resolve();
+                    });
+                });
+
+                return res.status(200).json({
+                    success: true,
+                    message: 'Google login successful',
+                    userId: user.id,
+                    username: user.username,
+                    email: user.email,
+                    picture: picture,
+                    redirectUrl: '/ListStud'
+                });
             }
-        });
+        } catch (dbError) {
+            console.error('Database error during Google login:', dbError);
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Database error during login',
+                error: process.env.NODE_ENV === 'development' ? dbError.message : undefined
+            });
+        }
     } catch (error) {
-        return res.status(401).send({ message: 'Invalid Google token' });
+        console.error('Google token verification error:', error);
+        return res.status(401).json({ 
+            success: false,
+            message: 'Invalid Google token',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 

@@ -23,8 +23,6 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-app.options('*', cors());
-
 // --- Middleware ---
 app.use((req, res, next) => {
     console.log(`Request URL: ${req.url}`);

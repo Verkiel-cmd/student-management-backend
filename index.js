@@ -13,14 +13,6 @@ dotenv.config();
 
 const app = express();
 
-// --- Middleware ---
-app.use((req, res, next) => {
-    console.log(`Request URL: ${req.url}`);
-    console.log(`Request Method: ${req.method}`);
-    console.log(`Request Headers: ${JSON.stringify(req.headers)}`);
-    next();
-});
-
 app.use(cors({
     origin: [
         'https://student-management-frontend-rust.vercel.app',
@@ -30,6 +22,15 @@ app.use(cors({
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
+
+// --- Middleware ---
+app.use((req, res, next) => {
+    console.log(`Request URL: ${req.url}`);
+    console.log(`Request Method: ${req.method}`);
+    console.log(`Request Headers: ${JSON.stringify(req.headers)}`);
+    next();
+});
 
 app.use(express.json());
 

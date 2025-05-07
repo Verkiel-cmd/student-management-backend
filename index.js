@@ -13,8 +13,6 @@ dotenv.config();
 
 const app = express();
 
-app.options('*', cors());
-
 app.use(cors({
     origin: [
         'https://student-management-frontend-rust.vercel.app',
@@ -25,6 +23,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+app.options('*', cors());
 
 // --- Middleware ---
 app.use((req, res, next) => {

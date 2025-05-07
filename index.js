@@ -232,14 +232,11 @@ const otpStorage = new Map();
 
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
+    port: 465,
+    secure: true,
     auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-    },
-    tls: {
-        rejectUnauthorized: false
+        pass: process.env.EMAIL_PASS
     }
 });
 
@@ -293,8 +290,8 @@ app.post('/send-otp', async (req, res) => {
 
         // Send email
         try {
-            await transporter.sendMail({
-                from: process.env.EMAIL_USER,
+            const mailOptions = {
+                from: `"Student Management System" <${process.env.EMAIL_USER}>`,
                 to: email,
                 subject: 'Password Reset OTP',
                 text: `Your OTP for password reset is: ${otp}. It will expire in 10 minutes.`,
@@ -307,19 +304,31 @@ app.post('/send-otp', async (req, res) => {
                         <p>If you didn't request this, please ignore this email.</p>
                     </div>
                 `
-            });
+            };
+
+            const info = await transporter.sendMail(mailOptions);
+            console.log('Email sent successfully:', info.messageId);
 
             res.json({ 
                 success: true, 
-                message: 'OTP sent successfully' 
+                message: 'OTP sent successfully',
+                email: email
             });
         } catch (emailError) {
-            console.error('Email sending error:', emailError);
+            console.error('Email sending error details:', {
+                error: emailError,
+                code: emailError.code,
+                command: emailError.command,
+                response: emailError.response,
+                responseCode: emailError.responseCode
+            });
+            
             // Remove the OTP if email sending fails
             otpStorage.delete(email);
+            
             return res.status(500).json({ 
                 success: false, 
-                message: 'Failed to send OTP email',
+                message: 'Failed to send OTP email. Please try again later.',
                 error: process.env.NODE_ENV === 'development' ? emailError.message : undefined
             });
         }
@@ -327,7 +336,7 @@ app.post('/send-otp', async (req, res) => {
         console.error('OTP generation error:', error);
         res.status(500).json({ 
             success: false, 
-            message: 'Failed to process OTP request',
+            message: 'Failed to process OTP request. Please try again later.',
             error: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }

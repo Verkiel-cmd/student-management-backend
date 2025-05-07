@@ -45,14 +45,6 @@ const db = mysql.createPool({
 });
 const dbPromise = db.promise();
 
-db.connect((err) => {
-    if (err) {
-        console.error('Database connection failed:', err.message);
-        process.exit(1);
-    }
-    console.log('Connected to the MySQL database');
-});
-
 // --- Session Store ---
 const MySQLStore = MySQLSession(session);
 const sessionStore = new MySQLStore({

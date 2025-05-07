@@ -231,35 +231,105 @@ app.post('/check-username', async (req, res) => {
 const otpStorage = new Map();
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
-    tls: { rejectUnauthorized: false },
-    debug: true,
+    tls: {
+        rejectUnauthorized: false
+    }
 });
+
+// Test email configuration on startup
+transporter.verify(function(error, success) {
+    if (error) {
+        console.error('Email configuration error:', error);
+    } else {
+        console.log('Email server is ready to send messages');
+    }
+});
+
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
 
 app.post('/send-otp', async (req, res) => {
     const { email } = req.body;
-    try {
-        const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        if (!isValidEmail(email)) return res.status(400).json({ success: false, message: 'Invalid email address' });
-        const [users] = await dbPromise.query('SELECT * FROM users WHERE email = ?', [email]);
-        if (users.length === 0) return res.status(404).json({ success: false, message: 'Email not found' });
-        const otp = generateOTP();
-        otpStorage.set(email, { otp, expires: Date.now() + 10 * 60 * 1000 });
-        await transporter.sendMail({
-            from: process.env.EMAIL_USER,
-            to: email,
-            subject: 'Password Reset OTP',
-            text: `Your OTP for password reset is: ${otp}. It will expire in 10 minutes.`
+    
+    // Input validation
+    if (!email) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Email is required' 
         });
-        res.json({ success: true, message: 'OTP sent successfully' });
+    }
+
+    const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (!isValidEmail(email)) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Invalid email address' 
+        });
+    }
+
+    try {
+        // Check if user exists
+        const [users] = await dbPromise.query('SELECT * FROM users WHERE email = ?', [email]);
+        if (users.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Email not found in our records' 
+            });
+        }
+
+        // Generate and store OTP
+        const otp = generateOTP();
+        otpStorage.set(email, { 
+            otp, 
+            expires: Date.now() + 10 * 60 * 1000,
+            attempts: 0
+        });
+
+        // Send email
+        try {
+            await transporter.sendMail({
+                from: process.env.EMAIL_USER,
+                to: email,
+                subject: 'Password Reset OTP',
+                text: `Your OTP for password reset is: ${otp}. It will expire in 10 minutes.`,
+                html: `
+                    <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #333;">Password Reset Request</h2>
+                        <p>Your OTP for password reset is:</p>
+                        <h1 style="color: #007bff; font-size: 32px; letter-spacing: 5px;">${otp}</h1>
+                        <p>This OTP will expire in 10 minutes.</p>
+                        <p>If you didn't request this, please ignore this email.</p>
+                    </div>
+                `
+            });
+
+            res.json({ 
+                success: true, 
+                message: 'OTP sent successfully' 
+            });
+        } catch (emailError) {
+            console.error('Email sending error:', emailError);
+            // Remove the OTP if email sending fails
+            otpStorage.delete(email);
+            return res.status(500).json({ 
+                success: false, 
+                message: 'Failed to send OTP email',
+                error: process.env.NODE_ENV === 'development' ? emailError.message : undefined
+            });
+        }
     } catch (error) {
-        console.error('SEND OTP ERROR:', error);
-        res.status(500).json({ success: false, message: 'Failed to send OTP', details: error.message });
+        console.error('OTP generation error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to process OTP request',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 

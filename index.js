@@ -27,7 +27,8 @@ app.use(cors({
         'https://student-management-frontend-blav8pkj3-verkiel-cmds-projects.vercel.app'
     ],
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 app.use(express.json());

@@ -231,12 +231,13 @@ app.post('/check-username', async (req, res) => {
 const otpStorage = new Map();
 
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
+    service: 'gmail',
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
+    },
+    tls: {
+        rejectUnauthorized: false
     }
 });
 
@@ -244,6 +245,11 @@ const transporter = nodemailer.createTransport({
 transporter.verify(function(error, success) {
     if (error) {
         console.error('Email configuration error:', error);
+        console.error('Please check your Gmail credentials in the environment variables.');
+        console.error('Make sure you have:');
+        console.error('1. Enabled 2-Step Verification in your Google Account');
+        console.error('2. Generated an App Password for this application');
+        console.error('3. Set the correct EMAIL_USER and EMAIL_PASS in your environment variables');
     } else {
         console.log('Email server is ready to send messages');
     }

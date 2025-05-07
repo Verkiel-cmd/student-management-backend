@@ -250,8 +250,8 @@ app.post('/send-otp', async (req, res) => {
     try {
         const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
         if (!isValidEmail(email)) return res.status(400).json({ success: false, message: 'Invalid email address' });
-        const [users] = await dbPromise.query('SELECT * FROM users WHERE email = ?', [email]);
-        if (users.length === 0) return res.status(404).json({ success: false, message: 'Email not found' });
+        const [user] = await dbPromise.query('SELECT * FROM users WHERE email = ?', [email]);
+        if (user.length === 0) return res.status(404).json({ success: false, message: 'Email not found' });
         const otp = generateOTP();
         otpStorage.set(email, { otp, expires: Date.now() + 10 * 60 * 1000 });
         await transporter.sendMail({

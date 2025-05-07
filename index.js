@@ -333,29 +333,119 @@ app.post('/send-otp', async (req, res) => {
     }
 });
 
-app.post('/verify-otp', (req, res) => {
+app.post('/verify-otp', async (req, res) => {
     const { email, otp } = req.body;
-    const storedOTP = otpStorage.get(email);
-    if (!storedOTP) return res.status(400).json({ success: false, message: 'OTP not found' });
-    if (storedOTP.expires < Date.now()) {
-        otpStorage.delete(email);
-        return res.status(400).json({ success: false, message: 'OTP expired' });
+    
+    if (!email || !otp) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Email and OTP are required' 
+        });
     }
-    if (storedOTP.otp !== otp) return res.status(400).json({ success: false, message: 'Invalid OTP' });
-    otpStorage.delete(email);
-    res.json({ success: true, message: 'OTP verified successfully' });
+
+    try {
+        // First check if user exists
+        const [users] = await dbPromise.query('SELECT * FROM users WHERE email = ?', [email]);
+        if (users.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'User not found' 
+            });
+        }
+
+        const storedOTP = otpStorage.get(email);
+        if (!storedOTP) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'No OTP found for this email. Please request a new OTP.' 
+            });
+        }
+
+        if (storedOTP.expires < Date.now()) {
+            otpStorage.delete(email);
+            return res.status(400).json({ 
+                success: false, 
+                message: 'OTP has expired. Please request a new one.' 
+            });
+        }
+
+        if (storedOTP.otp !== otp) {
+            // Increment attempts
+            storedOTP.attempts = (storedOTP.attempts || 0) + 1;
+            otpStorage.set(email, storedOTP);
+
+            if (storedOTP.attempts >= 3) {
+                otpStorage.delete(email);
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Too many failed attempts. Please request a new OTP.' 
+                });
+            }
+
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Invalid OTP. Please try again.' 
+            });
+        }
+
+        // OTP is valid
+        otpStorage.delete(email);
+        res.json({ 
+            success: true, 
+            message: 'OTP verified successfully',
+            email: email
+        });
+    } catch (error) {
+        console.error('OTP verification error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error verifying OTP. Please try again.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
 });
 
 app.post('/reset-password', async (req, res) => {
     const { email, newPassword } = req.body;
+    
+    if (!email || !newPassword) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Email and new password are required' 
+        });
+    }
+
     try {
+        // Check if user exists
         const [users] = await dbPromise.query('SELECT * FROM users WHERE email = ?', [email]);
-        if (!users || users.length === 0) return res.status(404).json({ success: false, message: 'User not found' });
+        if (users.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'User not found' 
+            });
+        }
+
+        // Hash the new password
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await dbPromise.query('UPDATE users SET password = ? WHERE email = ?', [hashedPassword, email]);
-        res.json({ success: true, message: 'Password reset successfully' });
+
+        // Update the password
+        await dbPromise.query(
+            'UPDATE users SET password = ? WHERE email = ?',
+            [hashedPassword, email]
+        );
+
+        res.json({ 
+            success: true, 
+            message: 'Password reset successfully',
+            email: email
+        });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Failed to reset password' });
+        console.error('Password reset error:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error resetting password. Please try again.',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 

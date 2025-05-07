@@ -554,7 +554,7 @@ app.delete('/students/:id', (req, res) => {
 
 // Drop classkern table if it exists
 const dropStudentawtTableQuery = `
-  DROP TABLE IF EXISTS classkern
+  DROP TABLE IF EXISTS studentawt
 `;
 
 // Create studentawt table if not exists
@@ -586,7 +586,7 @@ db.query(createStudentawtTableQuery, (err) => {
 
 // Drop classkern table if it exists
 const dropUserTableQuery = `
-  DROP TABLE IF EXISTS classkern
+  DROP TABLE IF EXISTS users
 `;
 
 // Create users table if not exists

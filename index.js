@@ -33,12 +33,15 @@ app.use(cors({
 app.use(express.json());
 
 // --- MySQL Connection ---
-const db = mysql.createConnection({
+const db = mysql.createPool({
     host: config.DB_HOST,
     user: config.DB_USER,
     password: config.DB_PASSWORD,
     database: config.DB_NAME,
-    port: config.MYSQLPORT || process.env.MYSQLPORT || 3306,
+    port: config.MYSQLPORT || process.env.MYSQLPORT || 53382,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
 });
 const dbPromise = db.promise();
 

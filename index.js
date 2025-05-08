@@ -21,14 +21,24 @@ app.use((req, res, next) => {
     next();
 });
 
+// CORS Configuration
 app.use(cors({
-    origin: [
-        'https://student-management-frontend-rust.vercel.app',
-        'https://student-management-frontend-blav8pkj3-verkiel-cmds-projects.vercel.app',  // Add your production domain here
-    ],
+    origin: (origin, callback) => {
+        const allowedOrigins = [
+            'https://student-management-frontend-rust.vercel.app',
+            'https://student-management-frontend-blav8pkj3-verkiel-cmds-projects.vercel.app'
+        ];
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            console.error(`CORS blocked for origin: ${origin}`);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    optionsSuccessStatus: 204 // Handle preflight OPTIONS requests
 }));
 
 app.use(express.json());

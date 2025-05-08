@@ -9,16 +9,16 @@ import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
 import config from './config.js';
 
+
+dotenv.config();
+
+const app = express();
+
 // 👇 Fix COOP error from browser blocking postMessage
 app.use((req, res, next) => {
     res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
     next();
 });
-
-
-dotenv.config();
-
-const app = express();
 
 app.use(cors({
     origin: [

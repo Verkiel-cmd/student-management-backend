@@ -192,6 +192,7 @@ app.post('/logout', (req, res) => {
 
 // Google Sign-In
 app.post('/google-login', async (req, res) => {
+    console.log('Handling /google-login POST');
     const { token } = req.body;
     
     if (!token) {

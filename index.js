@@ -14,9 +14,10 @@ dotenv.config();
 
 const app = express();
 
-// 👇 Fix COOP error from browser blocking postMessage
 app.use((req, res, next) => {
-    res.setHeader('Cross-Origin-Opener-Policy', 'unsafe-none');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none'); // Optional, for COEP
+    console.log('COOP Header Set: same-origin-allow-popups');
     next();
 });
 

@@ -23,6 +23,8 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+app.use(express.json());
+
 // --- Middleware ---
 app.use((req, res, next) => {
     console.log(`Request URL: ${req.url}`);
@@ -31,7 +33,7 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(express.json());
+
 
 // --- MySQL Connection ---
 const db = mysql.createPool({

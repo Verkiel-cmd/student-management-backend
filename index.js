@@ -24,9 +24,10 @@ app.use((req, res, next) => {
 app.use(cors({
     origin: (origin, callback) => {
         const allowedOrigins = [
+            'https://student-management-st.netlify.app',
             'https://student-management-frontend-rust.vercel.app',
             'https://student-management-frontend-blav8pkj3-verkiel-cmds-projects.vercel.app',
-            'https://student-management-st.netlify.app'
+            
         ];
         console.log('Allowed Origins:', allowedOrigins); // Debug log
         console.log('Request Origin:', origin); // Debug log

@@ -37,6 +37,8 @@ app.use(cors({
             'https://student-management-frontend-blav8pkj3-verkiel-cmds-projects.vercel.app',
             'https://student-management-st.netlify.app'
         ];
+        console.log('Allowed Origins:', allowedOrigins); // Debug log
+        console.log('Request Origin:', origin); // Debug log
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {

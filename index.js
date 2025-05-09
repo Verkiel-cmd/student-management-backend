@@ -21,12 +21,7 @@ app.use((req, res, next) => {
         COOP: 'same-origin-allow-popups',
         COEP: 'require-corp',
     });
-    // Handle preflight OPTIONS requests explicitly
-    if (req.method === 'OPTIONS') {
-        res.status(204).end();
-        return;
-    }
-    next();
+    next(); // Removed OPTIONS handling
 });
 
 // CORS Configuration

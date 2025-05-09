@@ -16,8 +16,16 @@ const app = express();
 
 app.use((req, res, next) => {
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-    res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none'); // Optional, for COEP
-    console.log('COOP Header Set: same-origin-allow-popups');
+    res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp'); // Use 'require-corp' for stricter COEP
+    res.setHeader('Access-Control-Allow-Origin', req.headers.origin || '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    console.log('Headers Set:', {
+        COOP: 'same-origin-allow-popups',
+        COEP: 'require-corp',
+        'Access-Control-Allow-Origin': req.headers.origin || '*',
+    });
     next();
 });
 

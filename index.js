@@ -17,11 +17,7 @@ const app = express();
 app.use((req, res, next) => {
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
     res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
-    console.log('Headers Set:', {
-        COOP: 'same-origin-allow-popups',
-        COEP: 'require-corp',
-    });
-    next(); // Removed OPTIONS handling
+    next(); // No OPTIONS handling here
 });
 
 // CORS Configuration

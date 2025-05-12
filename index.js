@@ -92,6 +92,7 @@ const sessionStore = new MySQLStore({
 });
 
 app.use(session({
+    name: 'user_sid',
     secret: config.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,

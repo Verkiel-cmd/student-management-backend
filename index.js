@@ -197,6 +197,7 @@ app.post('/login', async (req, res) => {
 });
 
 app.get('/auth/validate', (req, res) => {
+    console.log('Session:', req.session);
     if (req.session.userId) {
         return res.status(200).json({
             authenticated: true,

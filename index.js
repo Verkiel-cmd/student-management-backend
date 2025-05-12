@@ -134,36 +134,36 @@ app.post('/register', async (req, res) => {
         );
         req.session.userId = result.insertId;
         req.session.username = username;
-        console.log('Before save:', req.session); // Add this
-        req.session.save(err => {
-            if (err) {
-                console.error('Session save error:', err); // <-- Only log if there's an error
-                return res.status(500).json({ success: false, message: 'Session error' });
-            }
-            console.log('After save:', req.session); // Add this
-            res.status(201).json({
-                success: true,
-                message: 'User registered successfully',
-                userId: result.insertId,
-                username: username,
-                email: email,
-                redirectUrl: '/ListStud'
+        console.log('Before save:', req.session);
+        // Change: Use a Promise to wait for the session to save
+        await new Promise((resolve, reject) => {
+            req.session.save(err => {
+                if (err) {
+                    console.error('Session save error:', err);
+                    return reject(err);
+                }
+                console.log('After save:', req.session);
+                resolve();
             });
+        });
+        res.status(201).json({
+            success: true,
+            message: 'User registered successfully',
+            userId: result.insertId,
+            username: username,
+            email: email,
+            redirectUrl: '/ListStud'
         });
     } catch (error) {
         console.error('Registration error:', error);
         res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
     }
 });
-
 // Login
 app.post('/login', async (req, res) => {
     const { email, password } = req.body;
     try {
-        const [users] = await dbPromise.query(
-            'SELECT * FROM users WHERE email = ?',
-            [email]
-        );
+        const [users] = await dbPromise.query('SELECT * FROM users WHERE email = ?', [email]);
         if (users.length === 0) {
             return res.status(400).json({
                 success: false,
@@ -182,20 +182,27 @@ app.post('/login', async (req, res) => {
         }
         req.session.userId = user.id;
         req.session.username = user.username;
-        console.log('Before save:', req.session); // Add this
-        req.session.save(err => {
-            if (err) return res.status(500).json({ success: false, message: 'Session error' });
-            console.log('After save:', req.session);
-            res.json({
-                success: true,
-                message: 'Login successful',
-                userId: user.id,
-                username: user.username,
-                redirectUrl: '/ListStud'
+        console.log('Before save:', req.session);
+        // Change: Use a Promise to wait for the session to save
+        await new Promise((resolve, reject) => {
+            req.session.save(err => {
+                if (err) {
+                    console.error('Session save error:', err);
+                    return reject(err);
+                }
+                console.log('After save:', req.session);
+                resolve();
             });
         });
+        res.json({
+            success: true,
+            message: 'Login successful',
+            userId: user.id,
+            username: user.username,
+            redirectUrl: '/ListStud'
+        });
     } catch (error) {
-        console.error('Log in error:', error);
+        console.error('Login error:', error);
         res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
     }
 });

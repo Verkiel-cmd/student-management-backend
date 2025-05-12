@@ -11,6 +11,7 @@ const config = {
     DB_USER: process.env.DB_USER,       // Using MYSQLUSER from Render's environment
     DB_PASSWORD: process.env.DB_PASSWORD, // Using MYSQLPASSWORD from Render's environment
     DB_NAME: process.env.DB_NAME,
+    NODE_ENV: process.env.NODE_ENV,
 };
 
 export default config;

@@ -227,7 +227,10 @@ app.get('/auth/validate', (req, res) => {
 app.post('/logout', (req, res) => {
     req.session.destroy((err) => {
         if (err) return res.status(500).json({ error: "Logout failed" });
-        res.clearCookie("user_sid");
+        res.clearCookie("user_sid", {
+            sameSite: 'none',
+            secure: process.env.NODE_ENV === 'production'
+        });
         res.json({ message: "Logout successful" });
     });
 });

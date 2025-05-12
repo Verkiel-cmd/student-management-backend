@@ -144,7 +144,7 @@ app.post('/register', async (req, res) => {
                 userId: result.insertId,
                 username: username,
                 email: email,
-                redirectUrl: '/Frontlog'
+                redirectUrl: '/ListStud'
             });
         });
     } catch (error) {

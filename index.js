@@ -19,11 +19,12 @@ app.use((req, res, next) => {
     "default-src 'self'; " +
     "script-src 'self' https://accounts.google.com https://apis.google.com; " +
     "frame-src https://accounts.google.com; " +
-    "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com;" +
-    'Access-Control-Allow-Origin', 'https://student-management-st.netlify.app'+
-    'Access-Control-Allow-Credentials', 'true' 
+    "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com;" 
   );
   
+  res.setHeader('Access-Control-Allow-Origin', 'https://student-management-st.netlify.app');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'SAMEORIGIN'); // Allow iframes from same origin
   res.setHeader('X-XSS-Protection', '1; mode=block');

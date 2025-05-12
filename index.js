@@ -149,6 +149,7 @@ app.post('/register', async (req, res) => {
             });
         });
     } catch (error) {
+        console.error('Registration error:', error);
         res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
     }
 });
@@ -190,6 +191,7 @@ app.post('/login', async (req, res) => {
             });
         });
     } catch (error) {
+        console.error('Log in error:', error);
         res.status(500).json({ success: false, message: 'Server error. Please try again later.' });
     }
 });

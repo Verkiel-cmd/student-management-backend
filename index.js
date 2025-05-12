@@ -134,11 +134,13 @@ app.post('/register', async (req, res) => {
         );
         req.session.userId = result.insertId;
         req.session.username = username;
+        console.log('Before save:', req.session); // Add this
         req.session.save(err => {
             if (err) {
                 console.error('Session save error:', err); // <-- Only log if there's an error
                 return res.status(500).json({ success: false, message: 'Session error' });
             }
+            console.log('After save:', req.session); // Add this
             res.status(201).json({
                 success: true,
                 message: 'User registered successfully',
@@ -180,8 +182,10 @@ app.post('/login', async (req, res) => {
         }
         req.session.userId = user.id;
         req.session.username = user.username;
+        console.log('Before save:', req.session); // Add this
         req.session.save(err => {
             if (err) return res.status(500).json({ success: false, message: 'Session error' });
+            console.log('After save:', req.session);
             res.json({
                 success: true,
                 message: 'Login successful',
@@ -197,7 +201,7 @@ app.post('/login', async (req, res) => {
 });
 
 app.get('/auth/validate', (req, res) => {
-    console.log('Session:', req.session);
+    console.log('Session in /auth/validate:', req.session);
     if (req.session.userId) {
         return res.status(200).json({
             authenticated: true,

@@ -209,7 +209,7 @@ app.post('/login', async (req, res) => {
 
 app.get('/auth/validate', (req, res) => {
     console.log('Session in /auth/validate:', req.session);
-    if (req.session.userId) {
+    if (req.session && req.session.userId) {
         return res.status(200).json({
             authenticated: true,
             user: {

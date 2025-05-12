@@ -193,6 +193,21 @@ app.post('/login', async (req, res) => {
     }
 });
 
+app.get('/auth/validate', (req, res) => {
+    if (req.session.userId) {
+        return res.status(200).json({
+            authenticated: true,
+            user: {
+                id: req.session.userId,
+                username: req.session.username
+            }
+        });
+    } else {
+        return res.status(200).json({ authenticated: false });
+    }
+});
+
+
 // Logout
 app.post('/logout', (req, res) => {
     req.session.destroy((err) => {

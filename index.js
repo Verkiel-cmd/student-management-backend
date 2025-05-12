@@ -19,7 +19,9 @@ app.use((req, res, next) => {
     "default-src 'self'; " +
     "script-src 'self' https://accounts.google.com https://apis.google.com; " +
     "frame-src https://accounts.google.com; " +
-    "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com;"
+    "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com;" +
+    'Access-Control-Allow-Origin', 'https://student-management-st.netlify.app'+
+    'Access-Control-Allow-Credentials', 'true' 
   );
   
   res.setHeader('X-Content-Type-Options', 'nosniff');

@@ -15,10 +15,20 @@ dotenv.config();
 const app = express();
 
 app.use((req, res, next) => {
-  res.setHeader('Content-Security-Policy', "default-src 'self'; frame-ancestors 'none';");
+  res.setHeader('Content-Security-Policy', 
+    "default-src 'self'; " +
+    "script-src 'self' https://accounts.google.com https://apis.google.com; " +
+    "frame-src https://accounts.google.com; " +
+    "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com;"
+  );
+  
   res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN'); // Allow iframes from same origin
   res.setHeader('X-XSS-Protection', '1; mode=block');
+
+  // res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  // res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp'); 
+
   next();
 });
 

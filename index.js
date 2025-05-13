@@ -152,14 +152,16 @@ app.post('/register', async (req, res) => {
                 resolve();
             });
         });
+        const [users] = await dbPromise.query('SELECT * FROM users WHERE id = ?', [result.insertId]);
+        const newUser = users[0];
         res.status(201).json({
             success: true,
             message: 'User registered successfully',
-            userId: result.insertId,
-            username: username,
-            email: email,
+            userId: newUser.id,
+            username: newUser.username,
+            email: newUser.email,
             redirectUrl: '/ListStud'
-        });
+});
     } catch (error) {
         console.error('Registration error:', error);
         res.status(500).json({ success: false, message: 'Server error. Please try again later.' });

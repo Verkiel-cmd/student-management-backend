@@ -94,6 +94,9 @@ const sessionStore = new MySQLStore({
     expiration: 86400000,
 });
 
+// Add this line BEFORE app.use(session(...))
+app.set('trust proxy', 1);
+
 app.use(session({
     name: 'user_sid',
     secret: config.SESSION_SECRET,

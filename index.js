@@ -160,7 +160,7 @@ app.post('/register', async (req, res) => {
             userId: newUser.id,
             username: newUser.username,
             email: newUser.email,
-            redirectUrl: '/ListStud'
+            redirectUrl: '/Student_lists/ListStud'
 });
     } catch (error) {
         console.error('Registration error:', error);
@@ -304,7 +304,7 @@ app.post('/google-login', async (req, res) => {
                     username: username,
                     email: email,
                     picture: picture,
-                    redirectUrl: '/ListStud'
+                    redirectUrl: '/Student_lists/ListStud'
                 });
             } else {
                 // Existing user - set up session
@@ -326,7 +326,7 @@ app.post('/google-login', async (req, res) => {
                     username: user.username,
                     email: user.email,
                     picture: picture,
-                    redirectUrl: '/ListStud'
+                    redirectUrl: '/Student_lists/ListStud'
                 });
             }
         } catch (dbError) {

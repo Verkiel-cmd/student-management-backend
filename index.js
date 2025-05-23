@@ -207,7 +207,7 @@ app.post('/login', async (req, res) => {
             message: 'Login successful',
             userId: user.id,
             username: user.username,
-            redirectUrl: '/ListStud'
+            redirectUrl: '/Student_lists/ListStud'
         });
     } catch (error) {
         console.error('Login error:', error);

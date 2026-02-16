@@ -18,12 +18,9 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        # This runs inside the folder without needing the 'defaults' block
-        run: |
-          cd PRODUCTION_node-backend
-          npm install
+        # No more "cd" - we are already in the right place!
+        run: npm install
 
       - name: Check main entry point
-        run: |
-          cd PRODUCTION_node-backend
-          node --check index.js
+        # Directly checking the file in the root
+        run: node --check index.js

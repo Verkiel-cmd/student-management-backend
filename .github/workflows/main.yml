@@ -2,18 +2,12 @@ name: Backend CI/CD
 
 on:
   push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+    branches: [ main ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: ./PRODUCTION_node-backend
 
     steps:
       - uses: actions/checkout@v4
@@ -22,15 +16,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          # Cache removed to prevent path errors
 
       - name: Install dependencies
-        run: npm install 
-
-      - name: Validate configuration
-        # Using index.js because it exists in your sidebar
-        run: node -c index.js || true
+        # This runs inside the folder without needing the 'defaults' block
+        run: |
+          cd PRODUCTION_node-backend
+          npm install
 
       - name: Check main entry point
-        # Changed from login.js to index.js to match your files
-        run: node --check index.js
+        run: |
+          cd PRODUCTION_node-backend
+          node --check index.js

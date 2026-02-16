@@ -22,16 +22,15 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          # This cache only works if it knows where the lockfile is
-          cache-dependency-path: ./PRODUCTION_node-backend/package-lock.json
+          # Cache removed to prevent path errors
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install 
 
       - name: Validate configuration
+        # Using index.js because it exists in your sidebar
         run: node -c index.js || true
 
       - name: Check main entry point
-        # Using index.js since that's what shows in your production folder
+        # Changed from login.js to index.js to match your files
         run: node --check index.js

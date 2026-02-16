@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "main": "serverList  .js",
+  "main": "serverList.js",
   "type": "module",
  "scripts": {
     "start": "node login.js",
@@ -10,7 +10,7 @@
     "server3": "node class.js",
     "server4": "node forgotpassword.js",
     "start-all": "concurrently \"npm run server1\" \"npm run server2\" \"npm run server3\" \"npm run server4\"",
-    "postinstall": "chmod +x node_modules/.bin/* && chmod +x *.js"
+    "postinstall": "node -e \"if(process.platform!=='win32'){require('child_process').execSync('chmod +x node_modules/.bin/* && chmod +x *.js',{stdio:'inherit'})}\""
   },
   "keywords": [],
   "author": "",

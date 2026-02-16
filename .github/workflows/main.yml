@@ -11,6 +11,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: ./PRODUCTION_node-backend
+
     steps:
       - uses: actions/checkout@v4
 
@@ -19,6 +23,8 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+          # This cache only works if it knows where the lockfile is
+          cache-dependency-path: ./PRODUCTION_node-backend/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -27,5 +33,5 @@ jobs:
         run: node -c index.js || true
 
       - name: Check main entry point
-        run: node --check login.js
-
+        # Using index.js since that's what shows in your production folder
+        run: node --check index.js
